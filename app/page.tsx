@@ -1,0 +1,26 @@
+"use client";
+import { useEffect, useMemo, useState } from "react";
+
+type City={id:string;city:string;country:string;zone:string;code:string};
+const cities:City[]=[
+ {id:"tokyo",city:"東京",country:"日本",zone:"Asia/Tokyo",code:"TYO"},{id:"london",city:"ロンドン",country:"イギリス",zone:"Europe/London",code:"LON"},{id:"new-york",city:"ニューヨーク",country:"アメリカ",zone:"America/New_York",code:"NYC"},{id:"paris",city:"パリ",country:"フランス",zone:"Europe/Paris",code:"PAR"},{id:"singapore",city:"シンガポール",country:"シンガポール",zone:"Asia/Singapore",code:"SIN"},{id:"sydney",city:"シドニー",country:"オーストラリア",zone:"Australia/Sydney",code:"SYD"},{id:"los-angeles",city:"ロサンゼルス",country:"アメリカ",zone:"America/Los_Angeles",code:"LAX"},{id:"dubai",city:"ドバイ",country:"UAE",zone:"Asia/Dubai",code:"DXB"},{id:"honolulu",city:"ホノルル",country:"アメリカ",zone:"Pacific/Honolulu",code:"HNL"},{id:"sao-paulo",city:"サンパウロ",country:"ブラジル",zone:"America/Sao_Paulo",code:"SAO"}
+];
+const initial=["tokyo","london","new-york","singapore","sydney","los-angeles"];
+function clock(date:Date,zone:string,hour12:boolean){const p=new Intl.DateTimeFormat("ja-JP",{timeZone:zone,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12,weekday:"short",month:"short",day:"numeric"}).formatToParts(date);const g=(t:Intl.DateTimeFormatPartTypes)=>p.find(x=>x.type===t)?.value??"";const hour=Number(new Intl.DateTimeFormat("en-US",{timeZone:zone,hour:"numeric",hour12:false}).format(date));return{time:`${g("hour")}:${g("minute")}`,seconds:g("second"),period:g("dayPeriod").toUpperCase(),date:`${g("month")}${g("day")}日 ${g("weekday")}`,hour}}
+function offset(date:Date,zone:string){const p=new Intl.DateTimeFormat("en-CA",{timeZone:zone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(date);const v=(t:string)=>Number(p.find(x=>x.type===t)?.value);const utc=Date.UTC(v("year"),v("month")-1,v("day"),v("hour")%24,v("minute"),v("second"));const h=Math.round((utc-date.getTime())/36e5);return`UTC${h>=0?"+":""}${h}`}
+
+export default function Home(){
+ const[now,setNow]=useState<Date|null>(null),[hour12,setHour12]=useState(false),[query,setQuery]=useState(""),[selected,setSelected]=useState(initial);
+ useEffect(()=>{setNow(new Date());const t=window.setInterval(()=>setNow(new Date()),1000);return()=>window.clearInterval(t)},[]);
+ const visible=useMemo(()=>cities.filter(c=>selected.includes(c.id)),[selected]);
+ const matches=useMemo(()=>{const q=query.trim().toLowerCase();return q?cities.filter(c=>!selected.includes(c.id)&&`${c.city} ${c.country} ${c.code}`.toLowerCase().includes(q)):[]},[query,selected]);
+ if(!now)return <main className="boot"><div className="boot-mark">W</div><p>WORLDWISE</p></main>;
+ const local=clock(now,"Asia/Tokyo",hour12);
+ return <main><div className="ambient one"/><div className="ambient two"/>
+  <header className="topbar"><a className="brand" href="#top"><span className="brand-mark">W</span><span>WORLDWISE</span></a><div className="format-switch" aria-label="時刻形式"><button className={!hour12?"active":""} onClick={()=>setHour12(false)}>24H</button><button className={hour12?"active":""} onClick={()=>setHour12(true)}>12H</button></div></header>
+  <section className="hero" id="top"><p className="eyebrow"><span/> TIME ACROSS THE GLOBE</p><h1>世界の「いま」を、<br/><em>ひとつの場所に。</em></h1><p className="intro">離れた街の時間を、静かに、正確に。<br/>次の会話にちょうどいい瞬間を見つけよう。</p><div className="local-time"><span>YOUR LOCAL TIME · TOKYO</span><strong>{local.time}<small>:{local.seconds}</small></strong><p>{local.date} · {offset(now,"Asia/Tokyo")}</p></div></section>
+  <section className="clock-section" aria-labelledby="clocks-title"><div className="section-head"><div><p className="section-kicker">MY WORLD</p><h2 id="clocks-title">世界時計</h2></div><div className="search-wrap"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="都市を追加..." aria-label="追加する都市を検索"/>{matches.length>0&&<div className="search-results">{matches.slice(0,5).map(c=><button key={c.id} onClick={()=>{setSelected([...selected,c.id]);setQuery("")}}><span>{c.city}<small>{c.country}</small></span><b>＋</b></button>)}</div>}</div></div>
+   <div className="clock-grid">{visible.map((c,i)=>{const x=clock(now,c.zone,hour12),day=x.hour>=6&&x.hour<18;return <article className={`clock-card ${day?"day":"night"}`} key={c.id}><div className="card-top"><span className="code">{c.code}</span><button className="remove" onClick={()=>setSelected(selected.filter(id=>id!==c.id))} aria-label={`${c.city}を削除`}>×</button></div><div className="city-row"><div><h3>{c.city}</h3><p>{c.country}</p></div><span className="day-state">{day?"☀ DAY":"☾ NIGHT"}</span></div><div className="time-row"><strong>{x.time}</strong><span>{hour12&&x.period}<small>:{x.seconds}</small></span></div><div className="date-row"><span>{x.date}</span><span>{offset(now,c.zone)}</span></div><div className="horizon"><i style={{left:`${Math.min(96,Math.max(4,(x.hour/24)*100))}%`}}/></div><span className="card-number">0{i+1}</span></article>})}{visible.length===0&&<p className="empty">都市がありません。検索から追加してください。</p>}</div>
+  </section><footer><span>WORLDWISE · LIVE GLOBAL CLOCK</span><span>時刻は端末の時間をもとに1秒ごとに更新されます</span></footer>
+ </main>
+}
