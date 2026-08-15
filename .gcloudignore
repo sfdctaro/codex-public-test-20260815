@@ -1,0 +1,18 @@
+.git
+.gitignore
+.vinext
+.wrangler
+dist
+node_modules
+node_modules.dataless
+work
+outputs
+.DS_Store
+npm-debug.log*
+
+# Unused starter surfaces
+app/chatgpt-auth.ts
+db
+drizzle
+examples
+tests
